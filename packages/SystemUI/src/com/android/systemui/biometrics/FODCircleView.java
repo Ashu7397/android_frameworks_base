@@ -24,12 +24,14 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.RemoteException;
 import android.provider.Settings;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
@@ -68,6 +70,7 @@ public class FODCircleView extends ImageView {
 
     private boolean mIsBouncer;
     private boolean mIsDreaming;
+    private boolean mIsKeyguard;
     private boolean mIsShowing;
     private boolean mIsCircleShowing;
 
@@ -76,6 +79,8 @@ public class FODCircleView extends ImageView {
     private Handler mHandler;
 
     private Timer mBurnInProtectionTimer;
+
+    private FODAnimation mFODAnimation;
 
     private IFingerprintInscreenCallback mFingerprintInscreenCallback =
             new IFingerprintInscreenCallback.Stub() {
@@ -103,6 +108,15 @@ public class FODCircleView extends ImageView {
                 mBurnInProtectionTimer.schedule(new BurnInProtectionTask(), 0, 60 * 1000);
             } else if (mBurnInProtectionTimer != null) {
                 mBurnInProtectionTimer.cancel();
+            }
+        }
+        
+        @Override
+        public void onKeyguardVisibilityChanged(boolean showing) {
+            mIsKeyguard = showing;
+
+            if (mFODAnimation != null) {
+                mFODAnimation.setAnimationKeyguard(mIsKeyguard);
             }
         }
 
@@ -194,6 +208,8 @@ public class FODCircleView extends ImageView {
                 mCurrentDimAmount = drawingDimAmount;
             }
         });
+        
+        mFODAnimation = new FODAnimation(context, mPositionX, mPositionY);
     }
 
     @Override
@@ -211,14 +227,17 @@ public class FODCircleView extends ImageView {
 
         if (event.getAction() == MotionEvent.ACTION_DOWN && newIsInside) {
             showCircle();
+            mHandler.post(() -> mFODAnimation.showFODanimation());
             return true;
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             hideCircle();
+            mHandler.post(() -> mFODAnimation.hideFODanimation());
             return true;
         } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
             return true;
         }
-
+        
+        mHandler.post(() -> mFODAnimation.hideFODanimation());
         return false;
     }
 
@@ -372,6 +391,7 @@ public class FODCircleView extends ImageView {
         if (mIsDreaming) {
             mParams.x += mDreamingOffsetX;
             mParams.y += mDreamingOffsetY;
+            mFODAnimation.updateParams(mParams.y);
         }
 
         mWindowManager.updateViewLayout(this, mParams);
