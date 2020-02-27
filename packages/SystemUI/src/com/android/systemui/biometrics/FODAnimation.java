@@ -51,7 +51,7 @@ public class FODAnimation extends ImageView {
         mAnimParams.width = mAnimationSize;
 
         mAnimParams.format = PixelFormat.TRANSLUCENT;
-        mAnimParams.type = WindowManager.LayoutParams.TYPE_VOLUME_OVERLAY; // it must be behind FOD icon
+        mAnimParams.type = WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL; // it must be behind FOD icon
         mAnimParams.flags =  WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                 | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
         mAnimParams.gravity = Gravity.TOP | Gravity.CENTER;
