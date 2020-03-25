@@ -32,6 +32,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
@@ -51,10 +52,12 @@ import com.android.systemui.SystemUIFactory;
 import com.android.systemui.statusbar.phone.UnlockMethodCache;
 import com.android.systemui.util.InjectionInflationController;
 
+import com.android.internal.util.cr.CrConstants;
+
 public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSecurityView {
     private static final boolean DEBUG = KeyguardConstants.DEBUG;
     private static final String TAG = "KeyguardSecurityView";
-
+    
     private static final int USER_TYPE_PRIMARY = 1;
     private static final int USER_TYPE_WORK_PROFILE = 2;
     private static final int USER_TYPE_SECONDARY_USER = 3;
@@ -100,6 +103,7 @@ public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSe
     private int mActivePointerId = -1;
     private boolean mIsDragging;
     private float mStartTouchY = -1;
+    private final int mFODmargin;
 
     // Used to notify the container when something interesting happens.
     public interface SecurityCallback {
@@ -135,6 +139,8 @@ public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSe
             SystemUIFactory.getInstance().getRootComponent());
         mUnlockMethodCache = UnlockMethodCache.getInstance(context);
         mViewConfiguration = ViewConfiguration.get(context);
+        mFODmargin = mContext.getResources().getDimensionPixelSize(
+            R.dimen.keyguard_security_fod_view_margin);
     }
 
     public void setSecurityCallback(SecurityCallback callback) {
@@ -297,6 +303,15 @@ public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSe
             if (DEBUG) Log.v(TAG, "inflating id = " + layoutId);
             View v = mInjectionInflationController.injectable(inflater)
                     .inflate(layoutId, mSecurityViewFlipper, false);
+            View eca = v.findViewById(R.id.keyguard_selector_fade_container);
+            if (eca != null && hasInDisplayFingerprint() &&
+                    (securityMode == SecurityMode.Pattern
+                        || securityMode == SecurityMode.PIN)) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams)
+                            eca.getLayoutParams();
+                lp.setMargins(lp.leftMargin, mFODmargin, lp.rightMargin,
+                            lp.bottomMargin);
+            }
             mSecurityViewFlipper.addView(v);
             updateSecurityView(v);
             view = (KeyguardSecurityView)v;
@@ -463,6 +478,10 @@ public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSe
         }
     }
 
+    private boolean hasInDisplayFingerprint() {
+        return mContext.getPackageManager().hasSystemFeature(CrConstants.Features.FOD);
+    }
+
     /**
      * Shows the primary security screen for the user. This will be either the multi-selector
      * or the user's security method.
@@ -579,6 +598,7 @@ public class KeyguardSecurityContainer extends FrameLayout implements KeyguardSe
         mCurrentSecurityView = newView;
         mSecurityCallback.onSecurityModeChanged(securityMode,
                 securityMode != SecurityMode.None && newView.needsInput());
+        mUpdateMonitor.setSecurityMode(securityMode);
     }
 
     private KeyguardSecurityViewFlipper getFlipper() {
