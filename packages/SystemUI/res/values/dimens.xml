@@ -1167,5 +1167,5 @@
     <dimen name="celltile_rat_type_size">10sp</dimen>
 
     <!-- Size of the FOD animation -->
-    <dimen name="fod_animation_size">550.0px</dimen>
+    <dimen name="fod_animation_size">700.0px</dimen>
 </resources>
